@@ -6,9 +6,9 @@ using UnityEngine.UI;
 
 public class UIPanelGame : MonoBehaviour,IMenu
 {
-    public Text LevelConditionView;
 
     [SerializeField] private Button btnPause;
+    
 
     private UIMainManager m_mngr;
 
@@ -16,11 +16,17 @@ public class UIPanelGame : MonoBehaviour,IMenu
     {
         btnPause.onClick.AddListener(OnClickPause);
     }
+    
+    private void OnDestroy()
+    {
+        if (btnPause) btnPause.onClick.RemoveAllListeners();
+    }
 
     private void OnClickPause()
     {
         m_mngr.ShowPauseMenu();
     }
+    
 
     public void Setup(UIMainManager mngr)
     {

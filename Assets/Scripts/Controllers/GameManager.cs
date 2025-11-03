@@ -8,11 +8,11 @@ public class GameManager : MonoBehaviour
 {
     public event Action<eStateGame> StateChangedAction = delegate { };
 
-    public enum eLevelMode
-    {
-        TIMER,
-        MOVES
-    }
+    // public enum eLevelMode
+    // {
+    //     TIMER,
+    //     MOVES
+    // }
 
     public enum eStateGame
     {
@@ -21,6 +21,7 @@ public class GameManager : MonoBehaviour
         GAME_STARTED,
         PAUSE,
         GAME_OVER,
+        GAME_WIN,
     }
 
     private eStateGame m_state;
@@ -34,7 +35,8 @@ public class GameManager : MonoBehaviour
             StateChangedAction(m_state);
         }
     }
-
+    
+    public bool GameWon { get; private set; }
 
     private GameSettings m_gameSettings;
 
@@ -43,7 +45,7 @@ public class GameManager : MonoBehaviour
 
     private UIMainManager m_uiMenu;
 
-    private LevelCondition m_levelCondition;
+    // private LevelCondition m_levelCondition;
 
     private void Awake()
     {
@@ -69,7 +71,20 @@ public class GameManager : MonoBehaviour
 
     internal void SetState(eStateGame state)
     {
-        State = state;
+        if (state == eStateGame.GAME_WIN)
+        {
+            GameWon = true;
+            State = eStateGame.GAME_OVER; 
+        }
+        else if (state == eStateGame.GAME_OVER)
+        {
+            GameWon = false; 
+            State = eStateGame.GAME_OVER;
+        }
+        else
+        {
+            State = state;
+        }
 
         if(State == eStateGame.PAUSE)
         {
@@ -81,31 +96,19 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void LoadLevel(eLevelMode mode)
+    public void LoadLevel()
     {
+        GameWon = false;
         m_boardController = new GameObject("BoardController").AddComponent<BoardController>();
         m_boardController.StartGame(this, m_gameSettings);
 
-        if (mode == eLevelMode.MOVES)
-        {
-            m_levelCondition = this.gameObject.AddComponent<LevelMoves>();
-            m_levelCondition.Setup(m_gameSettings.LevelMoves, m_uiMenu.GetLevelConditionView(), m_boardController);
-        }
-        else if (mode == eLevelMode.TIMER)
-        {
-            m_levelCondition = this.gameObject.AddComponent<LevelTime>();
-            m_levelCondition.Setup(m_gameSettings.LevelMoves, m_uiMenu.GetLevelConditionView(), this);
-        }
-
-        m_levelCondition.ConditionCompleteEvent += GameOver;
-
-        State = eStateGame.GAME_STARTED;
+        SetState(eStateGame.GAME_STARTED);
     }
 
-    public void GameOver()
-    {
-        StartCoroutine(WaitBoardController());
-    }
+    // public void GameOver()
+    // {
+    //     StartCoroutine(WaitBoardController());
+    // }
 
     internal void ClearLevel()
     {
@@ -116,24 +119,48 @@ public class GameManager : MonoBehaviour
             m_boardController = null;
         }
     }
-
-    private IEnumerator WaitBoardController()
+    
+    public void StartAutoplay(bool aimToWin)
     {
-        while (m_boardController.IsBusy)
+        GameWon = false;
+        LoadLevel(); 
+        StartCoroutine(WaitForBoardControllerAndStartAutoplay(aimToWin));
+    }
+    
+    private IEnumerator WaitForBoardControllerAndStartAutoplay(bool isWin)
+    {
+        yield return new WaitForEndOfFrame();
+    
+        if (m_boardController != null)
         {
-            yield return new WaitForEndOfFrame();
-        }
-
-        yield return new WaitForSeconds(1f);
-
-        State = eStateGame.GAME_OVER;
-
-        if (m_levelCondition != null)
-        {
-            m_levelCondition.ConditionCompleteEvent -= GameOver;
-
-            Destroy(m_levelCondition);
-            m_levelCondition = null;
+            if (isWin)
+            {
+                m_boardController.StartAutoplayWin();
+            }
+            else
+            {
+                m_boardController.StartAutoplayLose();
+            }
         }
     }
+
+    // private IEnumerator WaitBoardController()
+    // {
+    //     while (m_boardController.IsBusy)
+    //     {
+    //         yield return new WaitForEndOfFrame();
+    //     }
+    //
+    //     yield return new WaitForSeconds(1f);
+    //
+    //     State = eStateGame.GAME_OVER;
+    //
+    //     if (m_levelCondition != null)
+    //     {
+    //         m_levelCondition.ConditionCompleteEvent -= GameOver;
+    //
+    //         Destroy(m_levelCondition);
+    //         m_levelCondition = null;
+    //     }
+    // }
 }

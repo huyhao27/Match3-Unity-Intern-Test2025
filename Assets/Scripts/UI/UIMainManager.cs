@@ -67,7 +67,14 @@ public class UIMainManager : MonoBehaviour
                 ShowMenu<UIPanelPause>();
                 break;
             case GameManager.eStateGame.GAME_OVER:
-                ShowMenu<UIPanelGameOver>();
+                if (m_gameManager.GameWon)
+                {
+                    ShowMenu<UIPanelWin>();
+                }
+                else
+                {
+                    ShowMenu<UIPanelGameOver>();
+                }
                 break;
         }
     }
@@ -87,35 +94,29 @@ public class UIMainManager : MonoBehaviour
             }            
         }
     }
-
-    internal Text GetLevelConditionView()
-    {
-        UIPanelGame game = m_menuList.Where(x => x is UIPanelGame).Cast<UIPanelGame>().FirstOrDefault();
-        if (game)
-        {
-            return game.LevelConditionView;
-        }
-
-        return null;
-    }
+    
 
     internal void ShowPauseMenu()
     {
         m_gameManager.SetState(GameManager.eStateGame.PAUSE);
     }
 
-    internal void LoadLevelMoves()
-    {
-        m_gameManager.LoadLevel(GameManager.eLevelMode.MOVES);
-    }
-
-    internal void LoadLevelTimer()
-    {
-        m_gameManager.LoadLevel(GameManager.eLevelMode.TIMER);
-    }
 
     internal void ShowGameMenu()
     {
         m_gameManager.SetState(GameManager.eStateGame.GAME_STARTED);
+    }
+    internal void StartGame()
+    {
+        m_gameManager.LoadLevel();
+    }
+    internal void StartAutoplayWin()
+    {
+        m_gameManager.StartAutoplay(true); 
+    }
+
+    internal void StartAutoplayLose()
+    {
+        m_gameManager.StartAutoplay(false); 
     }
 }

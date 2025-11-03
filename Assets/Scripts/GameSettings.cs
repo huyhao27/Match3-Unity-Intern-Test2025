@@ -9,10 +9,9 @@ public class GameSettings : ScriptableObject
     public int BoardSizeY = 5;
 
     public int MatchesMin = 3;
-
-    public int LevelMoves = 16;
-
-    public float LevelTime = 30f;
+    
+    public int BottomCellCount = 5;
+    public float AutoplayDelay = 0.5f;
 
     public float TimeForHint = 5f;
 }

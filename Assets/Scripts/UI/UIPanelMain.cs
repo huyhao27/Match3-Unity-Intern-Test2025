@@ -6,22 +6,25 @@ using UnityEngine.UI;
 
 public class UIPanelMain : MonoBehaviour, IMenu
 {
-    [SerializeField] private Button btnTimer;
 
-    [SerializeField] private Button btnMoves;
+    [SerializeField] private Button btnPlay;
+    [SerializeField] private Button btnAutoplayWin; 
+    [SerializeField] private Button btnAutoLose;
 
     private UIMainManager m_mngr;
 
     private void Awake()
     {
-        btnMoves.onClick.AddListener(OnClickMoves);
-        btnTimer.onClick.AddListener(OnClickTimer);
+        btnAutoplayWin?.onClick.AddListener(OnClickAutoplayWin);
+        btnAutoLose?.onClick.AddListener(OnClickAutoLose);
+        btnPlay?.onClick.AddListener(OnClickPlay);
     }
 
     private void OnDestroy()
     {
-        if (btnMoves) btnMoves.onClick.RemoveAllListeners();
-        if (btnTimer) btnTimer.onClick.RemoveAllListeners();
+        if (btnAutoplayWin) btnAutoplayWin.onClick.RemoveAllListeners(); 
+        if (btnAutoLose) btnAutoLose.onClick.RemoveAllListeners();
+        if (btnPlay) btnPlay.onClick.RemoveAllListeners();
     }
 
     public void Setup(UIMainManager mngr)
@@ -29,16 +32,20 @@ public class UIPanelMain : MonoBehaviour, IMenu
         m_mngr = mngr;
     }
 
-    private void OnClickTimer()
+    private void OnClickAutoplayWin()
     {
-        m_mngr.LoadLevelTimer();
+        m_mngr.StartAutoplayWin(); 
     }
 
-    private void OnClickMoves()
+    private void OnClickAutoLose()
     {
-        m_mngr.LoadLevelMoves();
+        m_mngr.StartAutoplayLose(); 
     }
-
+   
+    private void OnClickPlay()  
+    {
+        m_mngr.StartGame();
+    }
     public void Show()
     {
         this.gameObject.SetActive(true);
