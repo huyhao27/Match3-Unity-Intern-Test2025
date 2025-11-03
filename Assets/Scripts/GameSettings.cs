@@ -14,4 +14,6 @@ public class GameSettings : ScriptableObject
     public float AutoplayDelay = 0.5f;
 
     public float TimeForHint = 5f;
+
+    public float TimeAttackDuration = 60f;
 }

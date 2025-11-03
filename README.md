@@ -31,3 +31,37 @@ This was the big task: changing the game from a "swap-to-match-3" to a "tap-to-c
 * Comment/Removed old logic for `LevelMoves.cs`, `LevelTime.cs`, and `LevelCondition.cs`.
 * Comment/Removed old `swap`, `GetHorizontalMatches`, `GetPotentialMatches`, etc. functions from `Board.cs`.
 * Cleaned up `GameManager.cs` to comment/remove all old level logic.
+
+## Task 3: Gameplay Improvements (Done)
+
+### Board Initialization:
+* Updated `Board.cs` `Fill()` method to ensure all item types (TYPE_ONE through TYPE_SEVEN) appear at least once on the initial board.
+* Each type appears in multiples of 3 to maintain the matching requirement.
+
+### Animations:
+* **Item Movement:** Added smooth animation when items move from the board to bottom cells using DOTween's `DOMove` with `Ease.OutQuad` (0.3s duration).
+* **Match Clearing:** When 3 identical items are cleared, they scale to 0 using `DOScale` with `Ease.InBack` (0.2s duration) before being destroyed.
+
+### Time Attack Mode:
+* Added a new game mode `eGameMode.TimeAttack` in `GameManager.cs`.
+* Added a "Time Attack" button to `UIPanelMain` that loads the game in Time Attack mode.
+* **Time Attack Rules:**
+  * 60-second timer (configurable in `GameSettings.TimeAttackDuration`).
+  * Timer is displayed in the top area of `UIPanelGame` during Time Attack mode.
+  * Players can return items from bottom cells back to the board by tapping them (only in Time Attack mode).
+  * Bottom cells filling up does NOT cause a game over in Time Attack mode.
+  * **Win:** Clear all items from the board within the time limit.
+  * **Lose:** Time runs out while items remain on the board.
+* Timer logic is handled in `GameManager.TimeAttackTimerCoroutine()`.
+* `BottomArea` checks game mode before triggering lose condition via `shouldCheckLose` callback.
+
+### Code Changes:
+* `Board.cs`: Updated `Fill()` method and added helper methods `GetCellAt()` and `GetRoot()`.
+* `Item.cs`: Added `InitialBoardPosition` and `IsInBottomArea` properties to track item state.
+* `BottomArea.cs`: Added `RemoveItemAtCell()` and `RearrangeItems()` methods. Updated `TryAddItem()` and `ClearMatches()` with improved animations.
+* `BoardController.cs`: Added `ReturnItemToBoard()` method and `IsBusy` checks to prevent multiple simultaneous actions.
+* `GameManager.cs`: Added `eGameMode` enum, timer logic, and `SetGameMode()` method.
+* `GameSettings.cs`: Added `TimeAttackDuration` field.
+* `UIPanelMain.cs`: Added `btnTimeAttack` button.
+* `UIPanelGame.cs`: Added `timerText` field and `Update()` method to display countdown.
+* `UIMainManager.cs`: Added `LoadLevelTimeAttack()` and `GetGameManager()` methods.

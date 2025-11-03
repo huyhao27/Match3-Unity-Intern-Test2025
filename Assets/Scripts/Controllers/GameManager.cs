@@ -24,6 +24,12 @@ public class GameManager : MonoBehaviour
         GAME_WIN,
     }
 
+    public enum eGameMode
+    {
+        Normal,
+        TimeAttack
+    }
+
     private eStateGame m_state;
     public eStateGame State
     {
@@ -36,7 +42,17 @@ public class GameManager : MonoBehaviour
         }
     }
     
+    private eGameMode m_currentGameMode = eGameMode.Normal;
+    public eGameMode CurrentGameMode => m_currentGameMode;
+
     public bool GameWon { get; private set; }
+
+    private float m_timeRemaining;
+    private bool m_isTimerRunning;
+
+    public float GetTimeRemaining() => m_timeRemaining;
+
+    public event Action<float> OnTimeUpdate;
 
     private GameSettings m_gameSettings;
 
@@ -96,6 +112,11 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void SetGameMode(eGameMode mode)
+    {
+        m_currentGameMode = mode;
+    }
+
     public void LoadLevel()
     {
         GameWon = false;
@@ -103,6 +124,46 @@ public class GameManager : MonoBehaviour
         m_boardController.StartGame(this, m_gameSettings);
 
         SetState(eStateGame.GAME_STARTED);
+
+        if (m_currentGameMode == eGameMode.TimeAttack)
+        {
+            m_timeRemaining = m_gameSettings.TimeAttackDuration;
+            m_isTimerRunning = true;
+            StartCoroutine(TimeAttackTimerCoroutine());
+        }
+    }
+
+    private IEnumerator TimeAttackTimerCoroutine()
+    {
+        while (m_isTimerRunning && m_timeRemaining > 0 && State == eStateGame.GAME_STARTED)
+        {
+            yield return new WaitForSeconds(1f);
+            
+            if (!m_isTimerRunning || State != eStateGame.GAME_STARTED)
+                yield break;
+            
+            m_timeRemaining -= 1f;
+            OnTimeUpdate?.Invoke(m_timeRemaining);
+            
+            if (m_timeRemaining <= 0)
+            {
+                if (m_boardController != null && m_boardController.IsBoardEmpty())
+                {
+                    SetState(eStateGame.GAME_WIN);
+                }
+                else
+                {
+                    SetState(eStateGame.GAME_OVER);
+                }
+                m_isTimerRunning = false;
+                yield break;
+            }
+        }
+    }
+
+    public void StopTimer()
+    {
+        m_isTimerRunning = false;
     }
 
     // public void GameOver()
@@ -112,6 +173,7 @@ public class GameManager : MonoBehaviour
 
     internal void ClearLevel()
     {
+        StopTimer();
         if (m_boardController)
         {
             m_boardController.Clear();

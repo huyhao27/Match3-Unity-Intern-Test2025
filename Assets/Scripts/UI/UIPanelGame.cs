@@ -8,7 +8,8 @@ public class UIPanelGame : MonoBehaviour,IMenu
 {
 
     [SerializeField] private Button btnPause;
-    
+    [SerializeField] private Text timerText;
+    [SerializeField] private Image backGroundTimerText;
 
     private UIMainManager m_mngr;
 
@@ -26,7 +27,33 @@ public class UIPanelGame : MonoBehaviour,IMenu
     {
         m_mngr.ShowPauseMenu();
     }
-    
+
+    private void Update()
+    {
+        if (m_mngr != null && m_mngr.GetGameManager() != null)
+        {
+            if (m_mngr.GetGameManager().CurrentGameMode == GameManager.eGameMode.TimeAttack)
+            {
+                float timeRemaining = m_mngr.GetGameManager().GetTimeRemaining();
+                if (timerText != null)
+                {
+                    backGroundTimerText.gameObject.SetActive(true);
+                    timerText.gameObject.SetActive(true);
+                    int minutes = Mathf.FloorToInt(timeRemaining / 60);
+                    int seconds = Mathf.FloorToInt(timeRemaining % 60);
+                    timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+                }
+            }
+            else
+            {
+                if (timerText != null)
+                {
+                    timerText.gameObject.SetActive(false);
+                    backGroundTimerText.gameObject.SetActive(false);
+                }
+            }
+        }
+    }
 
     public void Setup(UIMainManager mngr)
     {

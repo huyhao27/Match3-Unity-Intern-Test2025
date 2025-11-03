@@ -119,4 +119,15 @@ public class UIMainManager : MonoBehaviour
     {
         m_gameManager.StartAutoplay(false); 
     }
+
+    internal void LoadLevelTimeAttack()
+    {
+        m_gameManager.SetGameMode(GameManager.eGameMode.TimeAttack);
+        m_gameManager.LoadLevel();
+    }
+
+    internal GameManager GetGameManager()
+    {
+        return m_gameManager;
+    }
 }

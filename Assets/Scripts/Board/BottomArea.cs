@@ -12,13 +12,15 @@ public class BottomArea
     private int m_cellCount;
     private Action m_onMatchClear;
     private Action m_onFull;
+    private Func<bool> m_shouldCheckLose;
 
-    public BottomArea(Transform root, int cellCount, Action onMatchClear, Action onFull)
+    public BottomArea(Transform root, int cellCount, Action onMatchClear, Action onFull, Func<bool> shouldCheckLose = null)
     {
         m_root = root;
         m_cellCount = cellCount;
         m_onMatchClear = onMatchClear;
         m_onFull = onFull;
+        m_shouldCheckLose = shouldCheckLose;
         m_bottomCells = new Cell[m_cellCount];
         
         CreateBottomCells();
@@ -51,17 +53,22 @@ public class BottomArea
             {
                 m_bottomCells[i].Assign(item);
                 item.SetViewRoot(m_root);
-                item.View.DOMove(m_bottomCells[i].transform.position, 0.3f).OnComplete(() =>
-                {
-                    CheckForMatches();
-                });
+                item.View.DOMove(m_bottomCells[i].transform.position, 0.3f)
+                    .SetEase(DG.Tweening.Ease.OutQuad)
+                    .OnComplete(() =>
+                    {
+                        CheckForMatches();
+                    });
                 return true;
             }
         }
         
         if (IsFull())
         {
-            m_onFull?.Invoke();
+            if (m_shouldCheckLose == null || m_shouldCheckLose())
+            {
+                m_onFull?.Invoke();
+            }
         }
         return false;
     }
@@ -96,7 +103,10 @@ public class BottomArea
 
         if (!matchFound && IsFull())
         {
-            m_onFull?.Invoke(); 
+            if (m_shouldCheckLose == null || m_shouldCheckLose())
+            {
+                m_onFull?.Invoke();
+            }
         }
     }
 
@@ -104,7 +114,20 @@ public class BottomArea
     {
         foreach (var cell in cellsToClear)
         {
-            cell.ExplodeItem();
+            if (cell.Item != null && cell.Item.View != null)
+            {
+                cell.Item.View.DOKill();
+                cell.Item.View.DOScale(0f, 0.2f)
+                    .SetEase(DG.Tweening.Ease.InBack)
+                    .OnComplete(() =>
+                    {
+                        cell.ExplodeItem();
+                    });
+            }
+            else
+            {
+                cell.ExplodeItem();
+            }
         }
     }
 
@@ -204,5 +227,45 @@ public class BottomArea
         }
         
         return null; 
+    }
+
+    public void RemoveItemAtCell(Cell cell)
+    {
+        for (int i = 0; i < m_cellCount; i++)
+        {
+            if (m_bottomCells[i] == cell)
+            {
+                m_bottomCells[i].Free();
+                RearrangeItems();
+                break;
+            }
+        }
+    }
+
+    private void RearrangeItems()
+    {
+        List<Item> items = new List<Item>();
+        
+        for (int i = 0; i < m_cellCount; i++)
+        {
+            if (!m_bottomCells[i].IsEmpty)
+            {
+                items.Add(m_bottomCells[i].Item);
+                m_bottomCells[i].Free();
+            }
+        }
+        
+        for (int i = 0; i < items.Count; i++)
+        {
+            m_bottomCells[i].Assign(items[i]);
+            items[i].View.DOMove(m_bottomCells[i].transform.position, 0.2f)
+                .SetEase(DG.Tweening.Ease.OutQuad);
+        }
+    }
+
+    public Cell GetCellAt(int index)
+    {
+        if (index < 0 || index >= m_cellCount) return null;
+        return m_bottomCells[index];
     }
 }

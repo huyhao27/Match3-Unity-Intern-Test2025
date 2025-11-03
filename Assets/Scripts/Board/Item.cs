@@ -11,6 +11,9 @@ public class Item
 
     public Transform View { get; private set; }
 
+    public Vector2Int InitialBoardPosition { get; set; }
+    public bool IsInBottomArea { get; set; }
+
 
     public virtual void SetView()
     {
@@ -98,7 +101,8 @@ public class Item
     {
         if (View)
         {
-            View.DOScale(0.1f, 0.1f).OnComplete(
+            View.DOKill();
+            View.DOScale(0f, 0.1f).OnComplete(
                 () =>
                 {
                     GameObject.Destroy(View.gameObject);

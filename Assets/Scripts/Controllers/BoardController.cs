@@ -28,7 +28,12 @@ public class BoardController : MonoBehaviour
         m_cam = Camera.main;
 
         m_board = new Board(this.transform, gameSettings);
-        m_bottomArea = new BottomArea(this.transform, gameSettings.BottomCellCount, OnMatchCleared, OnBottomAreaFull);
+        
+        Func<bool> shouldCheckLose = () => 
+            m_gameManager.CurrentGameMode != GameManager.eGameMode.TimeAttack;
+        
+        m_bottomArea = new BottomArea(this.transform, gameSettings.BottomCellCount, 
+            OnMatchCleared, OnBottomAreaFull, shouldCheckLose);
         
         Fill();
     }
@@ -75,36 +80,94 @@ public class BoardController : MonoBehaviour
 
     private void HandleTap()
     {
+        if (IsBusy) return;
+
         var hit = Physics2D.Raycast(m_cam.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
         if (hit.collider != null)
         {
             Cell cell = hit.collider.GetComponent<Cell>();
-            if (cell != null && !cell.IsBottomCell && !cell.IsEmpty)
+            if (cell != null)
             {
-                MoveItemToBottom(cell);
+                if (cell.IsBottomCell && !cell.IsEmpty && 
+                    m_gameManager.CurrentGameMode == GameManager.eGameMode.TimeAttack)
+                {
+                    ReturnItemToBoard(cell);
+                }
+                else if (!cell.IsBottomCell && !cell.IsEmpty)
+                {
+                    MoveItemToBottom(cell);
+                }
             }
         }
     }
 
     private void MoveItemToBottom(Cell boardCell)
     {
-        if (m_bottomArea.IsFull())
+        if (IsBusy) return;
+        if (boardCell.IsEmpty) return;
+
+        if (m_bottomArea.IsFull() && m_gameManager.CurrentGameMode == GameManager.eGameMode.Normal)
         {
             OnBottomAreaFull();
             return;
         }
 
+        IsBusy = true;
         Item item = boardCell.Item;
+        item.InitialBoardPosition = new Vector2Int(boardCell.BoardX, boardCell.BoardY);
+        item.IsInBottomArea = false;
+        
         boardCell.Free();
 
         if (m_bottomArea.TryAddItem(item))
         {
+            item.IsInBottomArea = true;
             OnMoveEvent();
-            CheckWinCondition();
+            StartCoroutine(WaitForMoveAnimationAndCheckWin());
         }
         else
         {
             boardCell.Assign(item);
+            IsBusy = false;
+        }
+    }
+
+    private IEnumerator WaitForMoveAnimationAndCheckWin()
+    {
+        yield return new WaitForSeconds(0.3f);
+        IsBusy = false;
+        CheckWinCondition();
+    }
+
+    private void ReturnItemToBoard(Cell bottomCell)
+    {
+        if (IsBusy) return;
+        if (bottomCell.IsEmpty) return;
+        
+        IsBusy = true;
+        Item item = bottomCell.Item;
+        Vector2Int originalPos = item.InitialBoardPosition;
+        
+        Cell targetBoardCell = m_board.GetCellAt(originalPos.x, originalPos.y);
+        
+        if (targetBoardCell != null && targetBoardCell.IsEmpty)
+        {
+            m_bottomArea.RemoveItemAtCell(bottomCell);
+            item.IsInBottomArea = false;
+            
+            targetBoardCell.Assign(item);
+            item.SetViewRoot(m_board.GetRoot());
+            
+            item.View.DOMove(targetBoardCell.transform.position, 0.3f)
+                .SetEase(DG.Tweening.Ease.OutQuad)
+                .OnComplete(() =>
+                {
+                    IsBusy = false;
+                });
+        }
+        else
+        {
+            IsBusy = false;
         }
     }
 
@@ -213,6 +276,11 @@ public class BoardController : MonoBehaviour
 
             yield return new WaitForSeconds(m_gameSettings.AutoplayDelay);
         }
+    }
+
+    public bool IsBoardEmpty()
+    {
+        return m_board.IsBoardEmpty();
     }
 
     internal void Clear()

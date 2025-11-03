@@ -48,11 +48,22 @@ public class Board
         int totalCells = boardSizeX * boardSizeY;
         int itemTypesCount = Enum.GetValues(typeof(NormalItem.eNormalType)).Length;
         
-        int itemsPerTypeBase = (totalCells / itemTypesCount) / 3 * 3;
-        int totalBaseItems = itemsPerTypeBase * itemTypesCount;
-        int remainingCells = totalCells - totalBaseItems;
-
         List<NormalItem.eNormalType> itemTypesList = new List<NormalItem.eNormalType>();
+        
+        foreach (NormalItem.eNormalType type in Enum.GetValues(typeof(NormalItem.eNormalType)))
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                itemTypesList.Add(type);
+            }
+        }
+        
+        int remainingCells = totalCells - itemTypesList.Count;
+        
+        int itemsPerTypeBase = (remainingCells / itemTypesCount) / 3 * 3;
+        int totalBaseItems = itemsPerTypeBase * itemTypesCount;
+        int finalRemaining = remainingCells - totalBaseItems;
+        
         foreach (NormalItem.eNormalType type in Enum.GetValues(typeof(NormalItem.eNormalType)))
         {
             for (int i = 0; i < itemsPerTypeBase; i++)
@@ -60,8 +71,8 @@ public class Board
                 itemTypesList.Add(type);
             }
         }
-
-        int remainingGroups = remainingCells / 3;
+        
+        int remainingGroups = finalRemaining / 3;
         for (int i = 0; i < remainingGroups; i++)
         {
             NormalItem.eNormalType type = (NormalItem.eNormalType)UnityEngine.Random.Range(0, itemTypesCount);
@@ -70,7 +81,7 @@ public class Board
                 itemTypesList.Add(type);
             }
         }
-
+        
         for (int i = 0; i < itemTypesList.Count; i++)
         {
             NormalItem.eNormalType temp = itemTypesList[i];
@@ -78,20 +89,20 @@ public class Board
             itemTypesList[i] = itemTypesList[randomIndex];
             itemTypesList[randomIndex] = temp;
         }
-
+        
         int index = 0;
         for (int x = 0; x < boardSizeX; x++)
         {
             for (int y = 0; y < boardSizeY; y++)
             {
                 if (index >= itemTypesList.Count) break;
-
+                
                 Cell cell = m_cells[x, y];
                 NormalItem item = new NormalItem();
                 item.SetType(itemTypesList[index]);
                 item.SetView();
                 item.SetViewRoot(m_root);
-
+                
                 cell.Assign(item);
                 cell.ApplyItemPosition(false);
                 index++;
@@ -133,6 +144,17 @@ public class Board
     // GetMatchDirection(), FindFirstMatch(), CheckBonusIfCompatible(),
     // GetPotentialMatches(), GetPotentialMatch(), LookForTheSecondCellHorizontal(),
     // LookForTheSecondCellVertical(), LookForTheThirdCell(), CheckThirdCell(), ShiftDownItems()
+
+    public Cell GetCellAt(int x, int y)
+    {
+        if (x < 0 || x >= boardSizeX || y < 0 || y >= boardSizeY) return null;
+        return m_cells[x, y];
+    }
+
+    public Transform GetRoot()
+    {
+        return m_root;
+    }
 
     public void Clear()
     {
